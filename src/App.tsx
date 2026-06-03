@@ -1,12 +1,3 @@
-// ============================================================
-// App.tsx — 메인 페이지 (전체 레이아웃 + 비즈니스 로직)
-// ============================================================
-// 역할:
-//   1. Supabase에서 지원 목록 불러오기 (fetchAll)
-//   2. 상태 필터 카드 렌더링 및 필터 로직
-//   3. 지원 목록 테이블 렌더링
-//   4. 상태 변경 / 삭제 처리
-
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
 import type { Application, ApplicationInsert, Status } from './types';
@@ -17,23 +8,14 @@ import ChatModal from './components/ChatModal';
 import './App.css';
 
 export default function App() {
-  // 전체 지원 목록 (DB에서 불러온 데이터)
   const [applications, setApplications] = useState<Application[]>([]);
-  // 초기 로딩 상태 (스켈레톤/스피너 대신 텍스트로 표시)
   const [loading, setLoading] = useState(true);
-  // 지원 추가 모달 열림 여부
   const [showModal, setShowModal] = useState(false);
-  // 수정할 항목 (null이면 EditModal 닫힘)
   const [editTarget, setEditTarget] = useState<Application | null>(null);
-  // 채팅할 항목 (null이면 ChatModal 닫힘)
   const [chatTarget, setChatTarget] = useState<Application | null>(null);
-  // 플랫폼 탭 ('전체' | '원티드' | '사람인' | '그룹바이' | ...)
   const [filterPlatform, setFilterPlatform] = useState<string>('전체');
-  // 선택된 필터 상태 ('전체'면 필터 없음)
   const [filterStatus, setFilterStatus] = useState<Status | '전체'>('전체');
 
-  // ── DB 조회 ──────────────────────────────────────────────
-  // Supabase에서 전체 목록을 지원일 최신순으로 가져온다.
   const fetchAll = async () => {
     const { data } = await supabase
       .from('applications')
@@ -43,35 +25,22 @@ export default function App() {
     setLoading(false);
   };
 
-  // 컴포넌트 마운트 시 한 번 실행
   useEffect(() => { fetchAll(); }, []);
 
-  // ── 지원 추가 ────────────────────────────────────────────
-  // AddModal에서 폼 제출 시 호출됨 → DB INSERT 후 목록 새로고침
   const handleAdd = async (data: ApplicationInsert) => {
     const { error } = await supabase.from('applications').insert(data);
-    if (error) {
-      alert('저장 실패: ' + error.message);
-      return;
-    }
+    if (error) { alert('저장 실패: ' + error.message); return; }
     await fetchAll();
   };
 
-  // ── 상태 변경 ────────────────────────────────────────────
-  // 테이블 select 변경 시 호출 → DB UPDATE + 로컬 상태도 즉시 반영
-  // (fetchAll 없이 로컬만 업데이트해서 깜빡임 방지)
-  const handleStatusChange = async (id: string, status: Status) => {
-    await supabase.from('applications').update({ status }).eq('id', id);
-    setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
-  };
-
-  // ── 삭제 ─────────────────────────────────────────────────
-  // confirm 확인 후 DB DELETE + 로컬 상태에서 즉시 제거
-  // ── 수정 ─────────────────────────────────────────────────
-  // EditModal에서 제출 시 호출 → DB UPDATE + 로컬 상태 즉시 반영
   const handleEdit = async (id: string, data: Partial<Application>) => {
     await supabase.from('applications').update(data).eq('id', id);
     setApplications(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
+  };
+
+  const handleStatusChange = async (id: string, status: Status) => {
+    await supabase.from('applications').update({ status }).eq('id', id);
+    setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
   };
 
   const handleDelete = async (id: string) => {
@@ -80,199 +49,208 @@ export default function App() {
     setApplications(prev => prev.filter(a => a.id !== id));
   };
 
-  // ── 필터 ─────────────────────────────────────────────────
-  // 플랫폼 탭에서 사용할 목록 (DB에 있는 플랫폼만 동적으로 추출)
   const platforms = ['전체', ...Array.from(new Set(applications.map(a => a.platform)))];
-
-  // 플랫폼 → 상태 순서로 필터링
-  const platformFiltered = filterPlatform === '전체'
-    ? applications
-    : applications.filter(a => a.platform === filterPlatform);
-
-  const filtered = filterStatus === '전체'
-    ? platformFiltered
-    : platformFiltered.filter(a => a.status === filterStatus);
-
-  // 현재 플랫폼 탭 기준으로 상태별 건수 표시
+  const platformFiltered = filterPlatform === '전체' ? applications : applications.filter(a => a.platform === filterPlatform);
+  const filtered = filterStatus === '전체' ? platformFiltered : platformFiltered.filter(a => a.status === filterStatus);
   const counts = STATUS_LIST.reduce((acc, s) => {
     acc[s] = platformFiltered.filter(a => a.status === s).length;
     return acc;
   }, {} as Record<Status, number>);
 
-  // ── 렌더링 ───────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
-      <div style={{ maxWidth: 920, margin: '0 auto', padding: '32px 20px' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
 
-        {/* ── 헤더 ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>취업 지원 현황</h1>
-            <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: 14 }}>총 {applications.length}개 지원</p>
-          </div>
-          <button onClick={() => setShowModal(true)} style={addBtnStyle}>+ 지원 추가</button>
-        </div>
-
-        {/* ── 플랫폼 탭 ── */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid #e5e7eb' }}>
-          {platforms.map(p => (
-            <button
-              key={p}
-              onClick={() => { setFilterPlatform(p); setFilterStatus('전체'); }}
-              style={{
-                padding: '8px 18px',
-                border: 'none',
-                borderBottom: filterPlatform === p ? '2px solid #6366f1' : '2px solid transparent',
-                background: 'none',
-                color: filterPlatform === p ? '#6366f1' : '#6b7280',
-                fontWeight: filterPlatform === p ? 700 : 400,
-                fontSize: 14,
-                cursor: 'pointer',
-                marginBottom: -2,
-              }}
-            >
-              {p} {p === '전체' ? `(${applications.length})` : `(${applications.filter(a => a.platform === p).length})`}
-            </button>
-          ))}
-        </div>
-
-        {/* ── 상태 필터 카드 ── */}
-        {/* 클릭 시 해당 상태만 필터링, 다시 클릭하면 필터 해제 */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-          {STATUS_LIST.map(s => (
-            <div
-              key={s}
-              onClick={() => setFilterStatus(filterStatus === s ? '전체' : s)}
-              style={{
-                background: filterStatus === s ? STATUS_COLOR[s] : '#fff',
-                color: filterStatus === s ? '#fff' : '#374151',
-                border: `2px solid ${STATUS_COLOR[s]}`,
-                borderRadius: 10,
-                padding: '10px 18px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: 14,
-                userSelect: 'none',
-              }}
-            >
-              {s} {counts[s]}
+      {/* 헤더 */}
+      <header style={{
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border)',
+        padding: '0 32px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        backdropFilter: 'blur(8px)',
+      }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 28, height: 28, background: 'var(--accent)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
+              🎯
             </div>
-          ))}
-          {/* 필터 중일 때만 '필터 해제' 텍스트 표시 */}
+            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-1)' }}>취업 지원 현황</span>
+            <span style={{ fontSize: 12, color: 'var(--text-3)', background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 99, border: '1px solid var(--border)' }}>
+              총 {applications.length}개
+            </span>
+          </div>
+          <button onClick={() => setShowModal(true)} style={addBtnStyle}>
+            + 지원 추가
+          </button>
+        </div>
+      </header>
+
+      <main style={{ maxWidth: 1000, margin: '0 auto', padding: '28px 20px' }}>
+
+        {/* 통계 카드 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 24 }}>
+          {STATUS_LIST.map(s => {
+            const isActive = filterStatus === s;
+            const c = STATUS_COLOR[s];
+            return (
+              <div
+                key={s}
+                onClick={() => { setFilterStatus(isActive ? '전체' : s); }}
+                style={{
+                  background: isActive ? c.bg : 'var(--surface)',
+                  border: `1.5px solid ${isActive ? c.bg : 'var(--border)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  padding: '14px 16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  boxShadow: isActive ? `0 4px 12px ${c.bg}40` : 'var(--shadow-sm)',
+                }}
+              >
+                <div style={{ fontSize: 22, fontWeight: 700, color: isActive ? '#fff' : 'var(--text-1)', lineHeight: 1 }}>
+                  {counts[s]}
+                </div>
+                <div style={{ fontSize: 12, color: isActive ? 'rgba(255,255,255,0.85)' : 'var(--text-2)', marginTop: 4 }}>
+                  {s}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 플랫폼 탭 */}
+        <div style={{ display: 'flex', gap: 2, marginBottom: 20, background: 'var(--surface)', borderRadius: 'var(--radius-md)', padding: 4, border: '1px solid var(--border)', width: 'fit-content' }}>
+          {platforms.map(p => {
+            const isActive = filterPlatform === p;
+            const count = p === '전체' ? applications.length : applications.filter(a => a.platform === p).length;
+            return (
+              <button
+                key={p}
+                onClick={() => { setFilterPlatform(p); setFilterStatus('전체'); }}
+                style={{
+                  padding: '6px 14px',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  background: isActive ? '#fff' : 'transparent',
+                  color: isActive ? 'var(--text-1)' : 'var(--text-3)',
+                  fontWeight: isActive ? 600 : 400,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
+                  transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {p} <span style={{ color: isActive ? 'var(--accent)' : 'var(--text-3)', fontSize: 12 }}>{count}</span>
+              </button>
+            );
+          })}
           {filterStatus !== '전체' && (
-            <div
+            <button
               onClick={() => setFilterStatus('전체')}
-              style={{ display: 'flex', alignItems: 'center', color: '#9ca3af', cursor: 'pointer', fontSize: 13, padding: '0 8px' }}
+              style={{ padding: '6px 10px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'transparent', color: 'var(--text-3)', fontSize: 12, cursor: 'pointer' }}
             >
               ✕ 필터 해제
-            </div>
+            </button>
           )}
         </div>
 
-        {/* ── 지원 목록 테이블 ── */}
+        {/* 테이블 */}
         {loading ? (
-          // 로딩 중
-          <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>불러오는 중...</div>
+          <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)' }}>불러오는 중...</div>
         ) : filtered.length === 0 ? (
-          // 데이터 없음
-          <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
-            {filterStatus === '전체' ? '지원 내역이 없습니다. 추가해보세요!' : `${filterStatus} 상태가 없습니다.`}
+          <div style={{ textAlign: 'center', padding: '80px 0' }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
+            <div style={{ color: 'var(--text-3)', fontSize: 14 }}>
+              {filterStatus === '전체' ? '지원 내역이 없습니다.' : `${filterStatus} 상태가 없습니다.`}
+            </div>
           </div>
         ) : (
-          <div style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#f3f4f6', borderBottom: '1px solid #e5e7eb' }}>
-                  {['회사명', '포지션', '플랫폼', '지원일', '상태', '공고', '메모', ''].map((h, i) => (
-                    <th key={i} style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>{h}</th>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  {['회사명', '포지션', '플랫폼', '지원일', '면접일', '상태', '공고', ''].map((h, i) => (
+                    <th key={i} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.04em', background: 'var(--surface-2)', whiteSpace: 'nowrap' }}>
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((app, i) => (
-                  <tr
-                    key={app.id}
-                    style={{
-                      borderBottom: i < filtered.length - 1 ? '1px solid #f3f4f6' : 'none',
-                      background: app.status === '탈락' ? '#fafafa' : '#fff', // 탈락은 배경색 살짝 다르게
-                    }}
-                  >
-                    {/* 회사명 — 탈락이면 회색으로 */}
-                    <td style={{ padding: '12px 14px', fontWeight: 600, color: app.status === '탈락' ? '#9ca3af' : '#111827' }}>
-                      {app.company_name}
-                    </td>
-                    <td style={{ padding: '12px 14px', color: '#374151' }}>{app.position}</td>
-                    <td style={{ padding: '12px 14px', color: '#6b7280' }}>{app.platform}</td>
-                    <td style={{ padding: '12px 14px', color: '#6b7280', whiteSpace: 'nowrap' }}>{app.applied_at}</td>
-
-                    {/* 상태 — select로 바로 변경 가능 */}
-                    <td style={{ padding: '12px 14px' }}>
-                      <select
-                        value={app.status}
-                        onChange={e => handleStatusChange(app.id, e.target.value as Status)}
-                        style={{
-                          background: STATUS_COLOR[app.status],
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: 20,
-                          padding: '4px 10px',
-                          fontSize: 12,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </td>
-
-                    {/* 공고 URL — 있으면 링크, 없으면 빈칸 */}
-                    <td style={{ padding: '12px 14px' }}>
-                      {app.job_url ? (
-                        <a href={app.job_url} target="_blank" rel="noreferrer" style={{ color: '#6366f1', fontSize: 13 }}>
-                          공고 ↗
-                        </a>
-                      ) : null}
-                    </td>
-
-                    {/* 메모 — 길면 말줄임표, hover 시 title로 전체 내용 확인 */}
-                    <td
-                      style={{ padding: '12px 14px', color: '#9ca3af', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                      title={app.notes}
+                {filtered.map((app, i) => {
+                  const isDead = app.status === '탈락';
+                  const c = STATUS_COLOR[app.status];
+                  return (
+                    <tr
+                      key={app.id}
+                      style={{
+                        borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
+                        opacity: isDead ? 0.55 : 1,
+                        transition: 'background 0.1s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
-                      {app.notes}
-                    </td>
-
-                    {/* 채팅/수정/삭제 버튼 */}
-                    <td style={{ padding: '12px 14px', display: 'flex', gap: 4 }}>
-                      <button
-                        onClick={() => setChatTarget(app)}
-                        title="AI 면접 준비"
-                        style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: 15 }}
-                      >
-                        💬
-                      </button>
-                      <button
-                        onClick={() => setEditTarget(app)}
-                        style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 15 }}
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDelete(app.id)}
-                        style={{ background: 'none', border: 'none', color: '#d1d5db', cursor: 'pointer', fontSize: 15 }}
-                      >
-                        🗑
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      <td style={{ padding: '13px 16px', fontWeight: 600, color: 'var(--text-1)', fontSize: 14 }}>
+                        {app.company_name}
+                      </td>
+                      <td style={{ padding: '13px 16px', color: 'var(--text-2)', fontSize: 13, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {app.position}
+                      </td>
+                      <td style={{ padding: '13px 16px' }}>
+                        <span style={{ fontSize: 12, color: 'var(--text-3)', background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 99, border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                          {app.platform}
+                        </span>
+                      </td>
+                      <td style={{ padding: '13px 16px', color: 'var(--text-3)', fontSize: 13, whiteSpace: 'nowrap' }}>
+                        {app.applied_at}
+                      </td>
+                      <td style={{ padding: '13px 16px', color: app.interview_at ? 'var(--accent)' : 'var(--text-3)', fontSize: 13, whiteSpace: 'nowrap', fontWeight: app.interview_at ? 600 : 400 }}>
+                        {app.interview_at || '—'}
+                      </td>
+                      <td style={{ padding: '13px 16px' }}>
+                        <select
+                          value={app.status}
+                          onChange={e => handleStatusChange(app.id, e.target.value as Status)}
+                          style={{
+                            background: c.soft,
+                            color: c.bg,
+                            border: `1.5px solid ${c.bg}40`,
+                            borderRadius: 99,
+                            padding: '3px 10px',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            outline: 'none',
+                          }}
+                        >
+                          {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </td>
+                      <td style={{ padding: '13px 16px' }}>
+                        {app.job_url ? (
+                          <a href={app.job_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--purple)', textDecoration: 'none', fontWeight: 500 }}>
+                            공고 ↗
+                          </a>
+                        ) : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>}
+                      </td>
+                      <td style={{ padding: '13px 12px' }}>
+                        <div style={{ display: 'flex', gap: 2 }}>
+                          <button onClick={() => setChatTarget(app)} title="AI 면접 준비" style={iconBtn}>💬</button>
+                          <button onClick={() => setEditTarget(app)} title="수정" style={iconBtn}>✏️</button>
+                          <button onClick={() => handleDelete(app.id)} title="삭제" style={iconBtn}>🗑</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
-      </div>
+      </main>
 
-      {/* 모달은 showModal이 true일 때만 렌더링 */}
       {showModal && <AddModal onClose={() => setShowModal(false)} onAdd={handleAdd} />}
       {editTarget && <EditModal application={editTarget} onClose={() => setEditTarget(null)} onEdit={handleEdit} />}
       {chatTarget && <ChatModal application={chatTarget} onClose={() => setChatTarget(null)} />}
@@ -280,14 +258,26 @@ export default function App() {
   );
 }
 
-// ── 스타일 상수 ──────────────────────────────────────────────
 const addBtnStyle: React.CSSProperties = {
-  background: '#6366f1',
+  background: 'var(--accent)',
   color: '#fff',
   border: 'none',
-  borderRadius: 8,
-  padding: '10px 20px',
-  fontSize: 14,
+  borderRadius: 'var(--radius-sm)',
+  padding: '8px 16px',
+  fontSize: 13,
   fontWeight: 600,
   cursor: 'pointer',
+  boxShadow: '0 2px 8px rgba(201,100,66,0.3)',
+  transition: 'opacity 0.15s',
+};
+
+const iconBtn: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  padding: '4px 6px',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontSize: 14,
+  opacity: 0.5,
+  transition: 'opacity 0.15s',
 };

@@ -3,41 +3,20 @@ import { STATUS_COLOR } from '../types';
 
 interface Props {
   status: Status;
-  onClick?: () => void;
-  options?: Status[];
 }
 
-export default function StatusBadge({ status, onClick, options }: Props) {
-  if (options && onClick) {
-    return (
-      <select
-        value={status}
-        onChange={onClick as any}
-        style={{
-          background: STATUS_COLOR[status],
-          color: '#fff',
-          border: 'none',
-          borderRadius: 20,
-          padding: '3px 10px',
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: 'pointer',
-        }}
-      >
-        {options.map(s => <option key={s} value={s}>{s}</option>)}
-      </select>
-    );
-  }
-
+export default function StatusBadge({ status }: Props) {
+  const c = STATUS_COLOR[status];
   return (
     <span style={{
-      background: STATUS_COLOR[status],
-      color: '#fff',
-      borderRadius: 20,
+      background: c.soft,
+      color: c.bg,
+      borderRadius: 99,
       padding: '3px 10px',
       fontSize: 12,
       fontWeight: 600,
       whiteSpace: 'nowrap',
+      border: `1.5px solid ${c.bg}40`,
     }}>
       {status}
     </span>

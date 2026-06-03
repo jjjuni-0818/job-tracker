@@ -30,14 +30,24 @@ export default function App() {
   useEffect(() => { fetchAll(); }, []);
 
   const handleAdd = async (data: ApplicationInsert) => {
-    const { error } = await supabase.from('applications').insert(data);
+    // date 타입 컬럼은 빈 문자열 대신 null로 변환
+    const cleaned = {
+      ...data,
+      interview_at: data.interview_at || null,
+    };
+    const { error } = await supabase.from('applications').insert(cleaned);
     if (error) { alert('저장 실패: ' + error.message); return; }
     await fetchAll();
   };
 
   const handleEdit = async (id: string, data: Partial<Application>) => {
-    await supabase.from('applications').update(data).eq('id', id);
-    setApplications(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
+    // date 타입 컬럼은 빈 문자열 대신 null로 변환
+    const cleaned = {
+      ...data,
+      interview_at: data.interview_at || null,
+    };
+    await supabase.from('applications').update(cleaned).eq('id', id);
+    setApplications(prev => prev.map(a => a.id === id ? { ...a, ...cleaned } : a));
   };
 
   const handleStatusChange = async (id: string, status: Status) => {
@@ -233,8 +243,8 @@ export default function App() {
                       </td>
                       <td style={{ padding: '13px 16px' }}>
                         {app.job_url ? (
-                          <a href={app.job_url} target="_blank" rel="noreferrer" style={{ color: 'var(--purple)', display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, textDecoration: 'none', fontWeight: 500 }}>
-                            <IconLink size={12} color="var(--purple)" /> 공고
+                          <a href={app.job_url} target="_blank" rel="noreferrer" title={app.job_url} style={{ color: 'var(--purple)', display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, textDecoration: 'none', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                            <IconLink size={12} color="var(--purple)" />
                           </a>
                         ) : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>}
                       </td>

@@ -15,7 +15,7 @@ export default function AddModal({ onClose, onAdd }: Props) {
     applied_at: new Date().toISOString().slice(0, 10),
     status: '서류중',
     job_url: '',
-    interview_at: '',
+    interview_at: null,
     notes: '',
   });
   const [loading, setLoading] = useState(false);
@@ -71,7 +71,7 @@ export default function AddModal({ onClose, onAdd }: Props) {
             </label>
             <label style={labelStyle}>
               면접 날짜
-              <input type="date" style={inputStyle} value={form.interview_at} onChange={e => setForm(f => ({ ...f, interview_at: e.target.value }))} />
+              <input type="date" style={inputStyle} value={form.interview_at ?? ''} onChange={e => setForm(f => ({ ...f, interview_at: e.target.value || null }))} />
             </label>
           </div>
 

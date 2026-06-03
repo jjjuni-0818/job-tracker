@@ -25,7 +25,7 @@ export interface Application {
   applied_at: string;
   status: Status;
   job_url: string;
-  interview_at: string;
+  interview_at: string | null;
   notes: string;
   created_at: string;
 }

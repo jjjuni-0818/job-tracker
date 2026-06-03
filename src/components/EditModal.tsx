@@ -16,7 +16,7 @@ export default function EditModal({ application, onClose, onEdit }: Props) {
     applied_at: application.applied_at,
     status: application.status,
     job_url: application.job_url ?? '',
-    interview_at: application.interview_at ?? '',
+    interview_at: application.interview_at ?? null,
     notes: application.notes,
   });
   const [loading, setLoading] = useState(false);
@@ -72,7 +72,7 @@ export default function EditModal({ application, onClose, onEdit }: Props) {
             </label>
             <label style={labelStyle}>
               면접 날짜
-              <input type="date" style={inputStyle} value={form.interview_at} onChange={e => setForm(f => ({ ...f, interview_at: e.target.value }))} />
+              <input type="date" style={inputStyle} value={form.interview_at ?? ''} onChange={e => setForm(f => ({ ...f, interview_at: e.target.value || null }))} />
             </label>
           </div>
 

@@ -22,6 +22,7 @@ export default function AddModal({ onClose, onAdd }: Props) {
     applied_at: new Date().toISOString().slice(0, 10),
     status: '서류중',
     job_url: '',
+    interview_at: '',
     notes: '',
   });
 
@@ -112,6 +113,17 @@ export default function AddModal({ onClose, onAdd }: Props) {
               value={form.job_url}
               onChange={e => setForm(f => ({ ...f, job_url: e.target.value }))}
               placeholder="https://www.wanted.co.kr/..."
+            />
+          </label>
+
+          {/* 면접 날짜 (선택) — 상태가 면접/서류합격일 때 입력 */}
+          <label style={labelStyle}>
+            면접 날짜
+            <input
+              type="date"
+              style={inputStyle}
+              value={form.interview_at}
+              onChange={e => setForm(f => ({ ...f, interview_at: e.target.value }))}
             />
           </label>
 

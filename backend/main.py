@@ -20,10 +20,12 @@ load_dotenv()
 
 app = FastAPI(title="Job Tracker RAG API")
 
-# 프론트엔드(localhost:5173)에서 API 호출 허용
+# 환경변수로 CORS 허용 URL 관리 (로컬 + 배포 둘 다 허용)
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,https://jjjuni-0818.github.io").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://jjjuni-0818.github.io"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -13,6 +13,7 @@ import type { Application, ApplicationInsert, Status } from './types';
 import { STATUS_LIST, STATUS_COLOR } from './types';
 import AddModal from './components/AddModal';
 import EditModal from './components/EditModal';
+import ChatModal from './components/ChatModal';
 import './App.css';
 
 export default function App() {
@@ -24,6 +25,8 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   // 수정할 항목 (null이면 EditModal 닫힘)
   const [editTarget, setEditTarget] = useState<Application | null>(null);
+  // 채팅할 항목 (null이면 ChatModal 닫힘)
+  const [chatTarget, setChatTarget] = useState<Application | null>(null);
   // 플랫폼 탭 ('전체' | '원티드' | '사람인' | '그룹바이' | ...)
   const [filterPlatform, setFilterPlatform] = useState<string>('전체');
   // 선택된 필터 상태 ('전체'면 필터 없음)
@@ -239,8 +242,15 @@ export default function App() {
                       {app.notes}
                     </td>
 
-                    {/* 수정/삭제 버튼 */}
+                    {/* 채팅/수정/삭제 버튼 */}
                     <td style={{ padding: '12px 14px', display: 'flex', gap: 4 }}>
+                      <button
+                        onClick={() => setChatTarget(app)}
+                        title="AI 면접 준비"
+                        style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: 15 }}
+                      >
+                        💬
+                      </button>
                       <button
                         onClick={() => setEditTarget(app)}
                         style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 15 }}
@@ -265,6 +275,7 @@ export default function App() {
       {/* 모달은 showModal이 true일 때만 렌더링 */}
       {showModal && <AddModal onClose={() => setShowModal(false)} onAdd={handleAdd} />}
       {editTarget && <EditModal application={editTarget} onClose={() => setEditTarget(null)} onEdit={handleEdit} />}
+      {chatTarget && <ChatModal application={chatTarget} onClose={() => setChatTarget(null)} />}
     </div>
   );
 }

@@ -80,7 +80,7 @@ export default function ChatModal({ application, onClose }: Props) {
     });
   };
 
-  // 공고 URL 크롤링 → 벡터 저장
+  // 공고 URL 크롤링 → 벡터 저장 → 검증
   const handleIngest = async () => {
     if (!application.job_url) return;
     setIngesting(true);
@@ -88,11 +88,26 @@ export default function ChatModal({ application, onClose }: Props) {
       const res = await fetch(`${API}/ingest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ application_id: application.id, url: application.job_url }),
+        body: JSON.stringify({
+          application_id: application.id,
+          url: application.job_url,
+          company_name: application.company_name,  // 검증용
+          position: application.position,           // 검증용
+        }),
       });
       if (!res.ok) throw new Error('공고 분석 실패');
+      const data = await res.json();
       setIngested(true);
-      const welcomeMsg = `✅ 공고 분석 완료! "${application.company_name}" 관련 질문을 해보세요.\n\n예시:\n• 이 회사 주요 기술스택이 뭐야?\n• 예상 면접 질문 알려줘\n• 자격요건이 어떻게 돼?`;
+
+      // 검증 결과에 따라 메시지 다르게
+      let welcomeMsg = '';
+      if (data.warning) {
+        // 경고 — URL이 다른 공고일 수 있음
+        welcomeMsg = `⚠️ 주의: ${data.warning}\n\n그래도 계속 질문할 수 있지만, 공고 URL을 한번 확인해보세요.\n\n예시:\n• 이 공고 회사명이 뭐야?\n• 어떤 포지션을 모집해?`;
+      } else {
+        // 정상
+        welcomeMsg = `공고 분석 완료! "${application.company_name}" 관련 질문을 해보세요.\n\n예시:\n• 이 회사 주요 기술스택이 뭐야?\n• 예상 면접 질문 알려줘\n• 자격요건이 어떻게 돼?`;
+      }
       setMessages([{ role: 'ai', content: welcomeMsg, created_at: new Date().toISOString() }]);
       await saveMessage('ai', welcomeMsg);
     } catch (e) {

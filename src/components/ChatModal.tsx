@@ -4,7 +4,7 @@
 // 변경: 채팅 기록을 Supabase chat_messages 테이블에 저장
 //       모달 열 때 이전 대화 불러오기
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Application } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -16,7 +16,17 @@ interface Props {
 interface Message {
   role: 'user' | 'ai';
   content: string;
+  created_at?: string;
 }
+
+// '2026-06-03' 형식으로 날짜 반환
+const toDateStr = (iso?: string) => iso ? iso.slice(0, 10) : new Date().toISOString().slice(0, 10);
+
+// '2026-06-03' → '2026년 6월 3일'
+const formatDate = (dateStr: string) => {
+  const [y, m, d] = dateStr.split('-');
+  return `${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
+};
 
 const API = 'http://localhost:8000';
 
@@ -26,6 +36,12 @@ export default function ChatModal({ application, onClose }: Props) {
   const [ingesting, setIngesting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ingested, setIngested] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null); // 채팅 맨 아래 참조
+
+  // 메시지 추가될 때마다 맨 아래로 스크롤
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
 
   // 모달 열릴 때 이전 대화 + 공고 분석 여부 불러오기
   useEffect(() => {
@@ -76,7 +92,7 @@ export default function ChatModal({ application, onClose }: Props) {
       if (!res.ok) throw new Error('공고 분석 실패');
       setIngested(true);
       const welcomeMsg = `✅ 공고 분석 완료! "${application.company_name}" 관련 질문을 해보세요.\n\n예시:\n• 이 회사 주요 기술스택이 뭐야?\n• 예상 면접 질문 알려줘\n• 자격요건이 어떻게 돼?`;
-      setMessages([{ role: 'ai', content: welcomeMsg }]);
+      setMessages([{ role: 'ai', content: welcomeMsg, created_at: new Date().toISOString() }]);
       await saveMessage('ai', welcomeMsg);
     } catch (e) {
       alert('공고 분석에 실패했습니다. URL을 확인해주세요.');
@@ -89,7 +105,8 @@ export default function ChatModal({ application, onClose }: Props) {
     if (!input.trim() || loading) return;
     const question = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: question }]);
+    const now = new Date().toISOString();
+    setMessages(prev => [...prev, { role: 'user', content: question, created_at: now }]);
     await saveMessage('user', question);
     setLoading(true);
 
@@ -100,7 +117,7 @@ export default function ChatModal({ application, onClose }: Props) {
         body: JSON.stringify({ application_id: application.id, question }),
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { role: 'ai', content: data.answer }]);
+      setMessages(prev => [...prev, { role: 'ai', content: data.answer, created_at: new Date().toISOString() }]);
       await saveMessage('ai', data.answer);
     } catch (e) {
       const errMsg = '오류가 발생했습니다. 서버 상태를 확인해주세요.';
@@ -160,22 +177,42 @@ export default function ChatModal({ application, onClose }: Props) {
               공고를 분석하면 질문할 수 있어요!
             </div>
           )}
-          {messages.map((m, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-              <div style={{
-                maxWidth: '85%',
-                padding: '10px 14px',
-                borderRadius: m.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                background: m.role === 'user' ? '#6366f1' : '#f3f4f6',
-                color: m.role === 'user' ? '#fff' : '#111827',
-                fontSize: 14,
-                lineHeight: 1.6,
-                whiteSpace: 'pre-wrap',
-              }}>
-                {m.content}
+          {messages.map((m, i) => {
+            // 이전 메시지와 날짜가 다르면 날짜 구분선 표시
+            const currDate = toDateStr(m.created_at);
+            const prevDate = i > 0 ? toDateStr(messages[i - 1].created_at) : null;
+            const showDateDivider = currDate !== prevDate;
+
+            return (
+              <div key={i}>
+                {/* 날짜 구분선 */}
+                {showDateDivider && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0' }}>
+                    <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+                    <span style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap' }}>
+                      {formatDate(currDate)}
+                    </span>
+                    <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+                  </div>
+                )}
+                {/* 메시지 버블 */}
+                <div style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{
+                    maxWidth: '85%',
+                    padding: '10px 14px',
+                    borderRadius: m.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                    background: m.role === 'user' ? '#6366f1' : '#f3f4f6',
+                    color: m.role === 'user' ? '#fff' : '#111827',
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    whiteSpace: 'pre-wrap',
+                  }}>
+                    {m.content}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {loading && (
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
               <div style={{ padding: '10px 14px', borderRadius: '12px 12px 12px 2px', background: '#f3f4f6', color: '#6b7280', fontSize: 14 }}>
@@ -183,6 +220,8 @@ export default function ChatModal({ application, onClose }: Props) {
               </div>
             </div>
           )}
+          {/* 스크롤 앵커 — 새 메시지 올 때 여기로 이동 */}
+          <div ref={bottomRef} />
         </div>
 
         {/* 입력창 */}

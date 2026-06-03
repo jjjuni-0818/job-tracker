@@ -17,29 +17,30 @@ def ask_groq(context: str, question: str, company_name: str = "", position: str 
     """공고 내용 + 지원자 정보를 바탕으로 질문에 답변"""
     client = get_client()
 
-    # 지원자 정보 섹션 구성
     applicant_info = f"""
 [지원자 정보]
-- 신분: 신입 개발자 (부트캠프 6개월 수료)
-- 기술스택: Python, FastAPI, React, TypeScript, Supabase, GitHub Actions
+- 신분: 신입 개발자 (AI헬스케어 부트캠프 6개월 수료)
+- 보유 기술: Python, FastAPI, React, TypeScript, Supabase(PostgreSQL), Pandas, GitHub Actions, Vercel/GitHub Pages 배포
+- Node.js, Spring, Java 경험 없음
 - 지원 회사: {company_name}
 - 지원 포지션: {position}
 - 현재 전형 단계: {status}
 """ if company_name else ""
 
-    prompt = f"""당신은 취업 준비 중인 신입 개발자의 면접 코치입니다.
-아래 채용 공고와 지원자 정보를 바탕으로 질문에 답변해주세요.
+    prompt = f"""당신은 신입 개발자의 취업 면접을 도와주는 코치입니다.
+반드시 아래 [채용 공고 내용]과 [지원자 정보]만을 근거로 답변하세요.
 
-━━━ 핵심 규칙 ━━━
-1. 반드시 공고 내용에 있는 내용만 근거로 삼으세요. 공고에 없는 내용은 만들어내지 마세요.
-2. 지원자가 신입임을 항상 인식하세요. 경력직 기준의 질문이나 조언은 하지 마세요.
-3. 예상 면접 질문을 요청하면:
-   - 반드시 "~하신가요?", "~해보셨나요?", "~이란 무엇인가요?" 형태의 질문으로 만드세요
-   - 공고의 자격요건/우대사항 문장을 그대로 복붙하지 마세요
-   - 신입에게 현실적으로 나올 수 있는 질문으로 만드세요
-   - 5개 내외로 작성하세요
-4. 답변 준비를 도울 때는 지원자의 기술스택(Python, React 등)과 연결해서 조언하세요.
-5. 한국어로 답변하고, 간결하게 핵심만 작성하세요.
+━━━ 절대 규칙 ━━━
+1. [채용 공고 내용]에 없는 기술, 회사 정보, 업무는 절대 언급하지 마세요.
+   공고에 없는 내용을 추측하거나 만들어내면 안 됩니다.
+2. 지원자는 신입입니다. 경력 기준의 답변을 하지 마세요.
+3. 지원자의 실제 보유 기술(Python, FastAPI, React, TypeScript, Supabase)만 언급하세요.
+   공고에 없거나 지원자가 보유하지 않은 기술(Node.js 등)은 언급하지 마세요.
+4. 예상 면접 질문 요청 시:
+   - 반드시 공고에 실제로 나온 내용 기반으로만 만드세요
+   - "~하신가요?", "~해보셨나요?", "~에 대해 설명해주세요" 형태의 질문으로 작성
+   - 신입 개발자에게 나올 법한 현실적인 질문 5개
+5. 공고에 없는 내용을 질문받으면 "공고에 해당 내용이 없습니다"라고 답하세요.
 ━━━━━━━━━━━━━━━
 {applicant_info}
 [채용 공고 내용]
@@ -47,12 +48,13 @@ def ask_groq(context: str, question: str, company_name: str = "", position: str 
 
 [질문]
 {question}
-"""
+
+답변:"""
 
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.4,
+        temperature=0.2,  # 낮출수록 할루시네이션 감소
         max_tokens=1500,
     )
 

@@ -67,6 +67,66 @@ graph TB
 
 ---
 
+## DB ERD
+
+```mermaid
+erDiagram
+    applications {
+        uuid id PK
+        text company_name
+        text position
+        text platform
+        date applied_at
+        text status
+        text job_url
+        date interview_at
+        text notes
+        timestamptz created_at
+    }
+    chat_messages {
+        uuid id PK
+        uuid application_id FK
+        text role "user or ai"
+        text content
+        timestamptz created_at
+    }
+    job_documents {
+        uuid id PK
+        uuid application_id FK
+        text content "크롤링된 공고 텍스트"
+        vector embedding "384차원"
+        timestamptz created_at
+    }
+
+    applications ||--o{ chat_messages : "1:N"
+    applications ||--o| job_documents : "1:1"
+```
+
+---
+
+## API 엔드포인트
+
+### Supabase REST API (자동 생성)
+
+| 메서드 | 경로 | 역할 |
+|--------|------|------|
+| GET | `/rest/v1/applications` | 지원 목록 조회 |
+| POST | `/rest/v1/applications` | 지원 추가 |
+| PATCH | `/rest/v1/applications?id=eq.{id}` | 지원 수정 |
+| DELETE | `/rest/v1/applications?id=eq.{id}` | 지원 삭제 |
+| GET | `/rest/v1/chat_messages` | 채팅 기록 조회 |
+| POST | `/rest/v1/chat_messages` | 채팅 메시지 저장 |
+
+### FastAPI 백엔드 (직접 구현)
+
+| 메서드 | 경로 | 역할 | 요청 바디 |
+|--------|------|------|-----------|
+| GET | `/health` | 서버 상태 확인 | - |
+| POST | `/ingest` | 공고 크롤링 + 벡터 저장 | `{application_id, url, company_name, position}` |
+| POST | `/chat` | RAG 채팅 답변 | `{application_id, question, company_name, position, status}` |
+
+---
+
 ## 로컬 실행
 
 ### 사전 준비
@@ -86,7 +146,6 @@ npm install
 ### 2. 환경변수 설정
 
 ```bash
-# 프론트엔드
 cp .env.example .env
 ```
 
@@ -96,13 +155,7 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 ```
 
-```bash
-# 백엔드
-cd backend
-cp .env.example .env  # 없으면 직접 생성
-```
-
-`backend/.env` 파일에 입력:
+`backend/.env` 파일:
 ```env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=eyJ...   # service_role key
@@ -123,7 +176,6 @@ pip install -r requirements.txt
 Supabase SQL Editor에서 실행:
 
 ```sql
--- 지원 목록
 create table applications (
   id           uuid        primary key default gen_random_uuid(),
   company_name text        not null,
@@ -138,7 +190,6 @@ create table applications (
 );
 alter table applications disable row level security;
 
--- 채팅 기록
 create table chat_messages (
   id             uuid        primary key default gen_random_uuid(),
   application_id uuid        references applications(id) on delete cascade,
@@ -148,7 +199,6 @@ create table chat_messages (
 );
 alter table chat_messages disable row level security;
 
--- 공고 벡터 (RAG)
 create extension if not exists vector;
 create table job_documents (
   id             uuid        primary key default gen_random_uuid(),
@@ -164,7 +214,6 @@ alter table job_documents disable row level security;
 
 ```bash
 # 한번에 실행 (권장)
-cd ~/job-tracker
 ./start.sh
 
 # 또는 터미널 2개로 따로 실행
@@ -181,19 +230,23 @@ npm run dev
 
 ## AI 면접 준비 사용법
 
-1. 지원 항목에서 ✏️ 수정 → 공고 URL 입력 후 저장
-2. 해당 항목의 💬 버튼 클릭
-3. **공고 분석 시작** 버튼 클릭 (최초 1회만)
-4. 질문 입력
+```mermaid
+flowchart LR
+    A["✏️ 수정에서\n공고 URL 입력"] --> B["💬 버튼 클릭"]
+    B --> C["공고 분석 시작\n최초 1회만"]
+    C --> D["질문 입력"]
+    D --> E["AI 답변"]
+```
 
+질문 예시:
 ```
 "예상 면접 질문 알려줘"
 "이 회사 주요 기술스택이 뭐야?"
-"자격요건이 어떻게 돼?"
+"내 기술스택으로 어필할 수 있는 부분이 뭐야?"
+"자기소개를 어떻게 하면 좋을까?"
 ```
 
 > ⚠️ AI 채팅은 백엔드 서버가 실행 중일 때만 동작합니다.
-> 배포 URL(GitHub Pages)에서는 로컬 백엔드 서버를 따로 켜야 합니다.
 
 ---
 
@@ -205,24 +258,29 @@ job-tracker/
 │   ├── components/
 │   │   ├── AddModal.tsx      # 지원 추가
 │   │   ├── EditModal.tsx     # 지원 수정
-│   │   └── ChatModal.tsx     # AI 면접 준비 채팅
+│   │   ├── ChatModal.tsx     # AI 면접 준비 채팅
+│   │   ├── Login.tsx         # 비밀번호 보호 화면
+│   │   └── Icons.tsx         # SVG 아이콘 모음
 │   ├── lib/supabase.ts       # DB 연결
-│   ├── types/index.ts        # 공통 타입
+│   ├── types/index.ts        # 공통 타입 + 상수
 │   └── App.tsx               # 메인 페이지
 ├── backend/
 │   ├── main.py               # FastAPI 엔드포인트
-│   ├── crawler.py            # 공고 크롤링
-│   ├── embedder.py           # 벡터 임베딩
-│   ├── llm.py                # Groq LLM
-│   ├── db.py                 # Supabase 연동
-│   └── requirements.txt
+│   ├── crawler.py            # 공고 크롤링 (BeautifulSoup)
+│   ├── embedder.py           # 벡터 임베딩 (HuggingFace)
+│   ├── llm.py                # Groq LLM 호출
+│   ├── db.py                 # Supabase 벡터 DB 연동
+│   ├── requirements.txt      # Python 패키지
+│   └── railway.toml          # Railway 배포 설정
 ├── docs/
-│   ├── PRD.md                # 기획 문서
-│   ├── SETUP.md              # 셋업 가이드
-│   ├── DASHBOARD.md          # 화면 구조
-│   ├── PROJECT_SUMMARY.md    # 전체 정리 + 머메이드
-│   └── velog_post.md         # 벨로그 포스트 초안
-├── start.sh                  # 한번에 실행 스크립트
+│   ├── PRD.md
+│   ├── SETUP.md
+│   ├── PROJECT_SUMMARY.md
+│   ├── PROJECT_SUMMARY2.md
+│   ├── velog_post.md         # 벨로그 1편
+│   └── velog_rag.md          # 벨로그 2편 (RAG)
+├── start.sh                  # 한번에 실행
+├── CLAUDE.md                 # Claude Code 가이드
 └── .github/workflows/
     └── deploy.yml            # GitHub Actions 자동 배포
 ```
@@ -231,9 +289,9 @@ job-tracker/
 
 ## 문서
 
-- [전체 프로젝트 정리](docs/PROJECT_SUMMARY.md) — 구조, 트러블슈팅, 머메이드 다이어그램
+- [1차 개발 정리](docs/PROJECT_SUMMARY.md)
+- [2차 개발 정리](docs/PROJECT_SUMMARY2.md) — UI/UX, RAG, 프롬프트 고도화
 - [PRD](docs/PRD.md) — 기획 문서
-- [셋업 가이드](docs/SETUP.md) — 상세 설치 방법
 - [CLAUDE.md](CLAUDE.md) — Claude Code 작업 가이드
 
 ---

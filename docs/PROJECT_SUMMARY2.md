@@ -297,7 +297,131 @@ graph LR
 
 ---
 
-## 10. 앞으로 할 것
+## 10. DB ERD (전체 테이블 관계)
+
+```mermaid
+erDiagram
+    applications {
+        uuid id PK
+        text company_name "회사명"
+        text position "포지션"
+        text platform "원티드/사람인/그룹바이 등"
+        date applied_at "지원 날짜"
+        text status "서류중/서류합격/면접/최종합격/탈락"
+        text job_url "공고 URL"
+        date interview_at "면접 날짜 (nullable)"
+        text notes "메모"
+        timestamptz created_at "생성일"
+    }
+
+    chat_messages {
+        uuid id PK
+        uuid application_id FK "applications.id 참조"
+        text role "user or ai"
+        text content "메시지 내용"
+        timestamptz created_at "생성일"
+    }
+
+    job_documents {
+        uuid id PK
+        uuid application_id FK "applications.id 참조"
+        text content "크롤링된 공고 텍스트"
+        vector embedding "384차원 벡터 (pgvector)"
+        timestamptz created_at "생성일"
+    }
+
+    applications ||--o{ chat_messages : "1:N (지원 1개 → 채팅 여러개)"
+    applications ||--o| job_documents : "1:1 (지원 1개 → 공고 벡터 1개)"
+```
+
+### 컬럼 추가 이력
+
+```sql
+-- 초기 생성
+create table applications (...);
+
+-- 추후 추가
+alter table applications add column job_url text default '';
+alter table applications add column interview_at date;
+
+-- RLS 비활성화 (개인용)
+alter table applications disable row level security;
+alter table chat_messages disable row level security;
+alter table job_documents disable row level security;
+```
+
+---
+
+## 11. API 엔드포인트 전체 정리
+
+```mermaid
+graph LR
+    subgraph Frontend["React 프론트"]
+        F1["지원 목록 조회"]
+        F2["지원 추가/수정/삭제"]
+        F3["상태 변경"]
+        F4["채팅 기록 조회/저장"]
+    end
+
+    subgraph Supabase["Supabase REST API (자동 생성)"]
+        S1["GET /rest/v1/applications"]
+        S2["POST /rest/v1/applications"]
+        S3["PATCH /rest/v1/applications?id=eq.{id}"]
+        S4["DELETE /rest/v1/applications?id=eq.{id}"]
+        S5["GET /rest/v1/chat_messages"]
+        S6["POST /rest/v1/chat_messages"]
+        S7["DELETE /rest/v1/chat_messages"]
+        S8["GET /rest/v1/job_documents"]
+    end
+
+    subgraph FastAPI["FastAPI 백엔드 (직접 구현)"]
+        B1["GET /health\n서버 상태 확인"]
+        B2["POST /ingest\n공고 크롤링 + 벡터 저장"]
+        B3["POST /chat\nRAG 채팅 답변 생성"]
+    end
+
+    F1 --> S1
+    F2 --> S2
+    F3 --> S3
+    F2 --> S4
+    F4 --> S5
+    F4 --> S6
+    F4 --> S7
+    F1 --> S8
+    F3 --> B2
+    F4 --> B3
+```
+
+### FastAPI 엔드포인트 상세
+
+| 메서드 | 경로 | 역할 | 요청 바디 | 응답 |
+|--------|------|------|-----------|------|
+| GET | `/health` | 서버 상태 확인 | - | `{"status": "ok"}` |
+| POST | `/ingest` | 공고 크롤링 + 벡터 저장 | `{application_id, url, company_name, position}` | `{status, warning, company_found, position_found}` |
+| POST | `/chat` | RAG 채팅 답변 | `{application_id, question, company_name, position, status}` | `{answer}` |
+
+### Supabase 클라이언트 사용 패턴
+
+```typescript
+// 조회
+supabase.from('applications').select('*').order('applied_at', { ascending: false })
+
+// 추가
+supabase.from('applications').insert(data)
+
+// 수정 — interview_at은 빈 문자열 대신 null 전송 (date 타입)
+supabase.from('applications').update({ ...data, interview_at: data.interview_at || null }).eq('id', id)
+
+// 삭제
+supabase.from('applications').delete().eq('id', id)
+
+// 채팅 기록 — 시간순 정렬
+supabase.from('chat_messages').select('role, content').eq('application_id', id).order('created_at', { ascending: true })
+```
+
+---
+
+## 12. 앞으로 할 것
 
 - [ ] Railway 백엔드 배포 → 어디서든 AI 채팅 가능
 - [ ] 벨로그 포스트 2편 작성 (RAG 구현 과정)

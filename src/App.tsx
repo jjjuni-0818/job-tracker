@@ -24,6 +24,8 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   // 수정할 항목 (null이면 EditModal 닫힘)
   const [editTarget, setEditTarget] = useState<Application | null>(null);
+  // 플랫폼 탭 ('전체' | '원티드' | '사람인' | '그룹바이' | ...)
+  const [filterPlatform, setFilterPlatform] = useState<string>('전체');
   // 선택된 필터 상태 ('전체'면 필터 없음)
   const [filterStatus, setFilterStatus] = useState<Status | '전체'>('전체');
 
@@ -76,14 +78,21 @@ export default function App() {
   };
 
   // ── 필터 ─────────────────────────────────────────────────
-  // filterStatus가 '전체'면 전체 목록, 아니면 해당 상태만 필터링
-  const filtered = filterStatus === '전체'
-    ? applications
-    : applications.filter(a => a.status === filterStatus);
+  // 플랫폼 탭에서 사용할 목록 (DB에 있는 플랫폼만 동적으로 추출)
+  const platforms = ['전체', ...Array.from(new Set(applications.map(a => a.platform)))];
 
-  // 상태 카드에 표시할 상태별 건수
+  // 플랫폼 → 상태 순서로 필터링
+  const platformFiltered = filterPlatform === '전체'
+    ? applications
+    : applications.filter(a => a.platform === filterPlatform);
+
+  const filtered = filterStatus === '전체'
+    ? platformFiltered
+    : platformFiltered.filter(a => a.status === filterStatus);
+
+  // 현재 플랫폼 탭 기준으로 상태별 건수 표시
   const counts = STATUS_LIST.reduce((acc, s) => {
-    acc[s] = applications.filter(a => a.status === s).length;
+    acc[s] = platformFiltered.filter(a => a.status === s).length;
     return acc;
   }, {} as Record<Status, number>);
 
@@ -99,6 +108,29 @@ export default function App() {
             <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: 14 }}>총 {applications.length}개 지원</p>
           </div>
           <button onClick={() => setShowModal(true)} style={addBtnStyle}>+ 지원 추가</button>
+        </div>
+
+        {/* ── 플랫폼 탭 ── */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid #e5e7eb' }}>
+          {platforms.map(p => (
+            <button
+              key={p}
+              onClick={() => { setFilterPlatform(p); setFilterStatus('전체'); }}
+              style={{
+                padding: '8px 18px',
+                border: 'none',
+                borderBottom: filterPlatform === p ? '2px solid #6366f1' : '2px solid transparent',
+                background: 'none',
+                color: filterPlatform === p ? '#6366f1' : '#6b7280',
+                fontWeight: filterPlatform === p ? 700 : 400,
+                fontSize: 14,
+                cursor: 'pointer',
+                marginBottom: -2,
+              }}
+            >
+              {p} {p === '전체' ? `(${applications.length})` : `(${applications.filter(a => a.platform === p).length})`}
+            </button>
+          ))}
         </div>
 
         {/* ── 상태 필터 카드 ── */}

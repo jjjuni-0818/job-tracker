@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
 import type { Application, ApplicationInsert, Status } from './types';
 import { STATUS_LIST, STATUS_COLOR } from './types';
+
 import AddModal from './components/AddModal';
 import EditModal from './components/EditModal';
 import ChatModal from './components/ChatModal';
+import { IconTarget, IconPlus, IconEdit, IconTrash, IconChat, IconLink, IconClipboard } from './components/Icons';
 import './App.css';
 
 export default function App() {
@@ -72,8 +74,8 @@ export default function App() {
       }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 28, height: 28, background: 'var(--accent)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
-              🎯
+            <div style={{ width: 28, height: 28, background: 'var(--accent)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <IconTarget size={14} color="#fff" />
             </div>
             <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-1)' }}>취업 지원 현황</span>
             <span style={{ fontSize: 12, color: 'var(--text-3)', background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 99, border: '1px solid var(--border)' }}>
@@ -81,7 +83,8 @@ export default function App() {
             </span>
           </div>
           <button onClick={() => setShowModal(true)} style={addBtnStyle}>
-            + 지원 추가
+            <IconPlus size={14} color="#fff" style={{ marginRight: 6 }} />
+          지원 추가
           </button>
         </div>
       </header>
@@ -160,7 +163,7 @@ export default function App() {
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-3)' }}>불러오는 중...</div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
+            <div style={{ marginBottom: 12, opacity: 0.3 }}><IconClipboard size={36} color="var(--text-2)" /></div>
             <div style={{ color: 'var(--text-3)', fontSize: 14 }}>
               {filterStatus === '전체' ? '지원 내역이 없습니다.' : `${filterStatus} 상태가 없습니다.`}
             </div>
@@ -230,16 +233,16 @@ export default function App() {
                       </td>
                       <td style={{ padding: '13px 16px' }}>
                         {app.job_url ? (
-                          <a href={app.job_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--purple)', textDecoration: 'none', fontWeight: 500 }}>
-                            공고 ↗
+                          <a href={app.job_url} target="_blank" rel="noreferrer" style={{ color: 'var(--purple)', display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, textDecoration: 'none', fontWeight: 500 }}>
+                            <IconLink size={12} color="var(--purple)" /> 공고
                           </a>
                         ) : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>}
                       </td>
                       <td style={{ padding: '13px 12px' }}>
                         <div style={{ display: 'flex', gap: 2 }}>
-                          <button onClick={() => setChatTarget(app)} title="AI 면접 준비" style={iconBtn}>💬</button>
-                          <button onClick={() => setEditTarget(app)} title="수정" style={iconBtn}>✏️</button>
-                          <button onClick={() => handleDelete(app.id)} title="삭제" style={iconBtn}>🗑</button>
+                          <button onClick={() => setChatTarget(app)} title="AI 면접 준비" style={iconBtn}><IconChat color="var(--purple)" /></button>
+                          <button onClick={() => setEditTarget(app)} title="수정" style={iconBtn}><IconEdit color="var(--text-3)" /></button>
+                          <button onClick={() => handleDelete(app.id)} title="삭제" style={iconBtn}><IconTrash color="var(--text-3)" /></button>
                         </div>
                       </td>
                     </tr>

@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Application } from '../types';
 import { supabase } from '../lib/supabase';
+import { IconClose, IconSend, IconSearch } from './Icons';
 
 interface Props {
   application: Application;
@@ -149,7 +150,7 @@ export default function ChatModal({ application, onClose }: Props) {
                 대화 초기화
               </button>
             )}
-            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9ca3af' }}>✕</button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', padding: 4 }}><IconClose size={18} /></button>
           </div>
         </div>
 
@@ -160,7 +161,10 @@ export default function ChatModal({ application, onClose }: Props) {
             disabled={ingesting}
             style={{ width: '100%', padding: '10px', marginBottom: 16, background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}
           >
-            {ingesting ? '공고 분석 중...' : '🔍 공고 분석 시작'}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+              <IconSearch size={14} color="#fff" />
+              {ingesting ? '공고 분석 중...' : '공고 분석 시작'}
+            </span>
           </button>
         )}
 
@@ -239,7 +243,7 @@ export default function ChatModal({ application, onClose }: Props) {
             disabled={!ingested || loading}
             style={{ padding: '10px 16px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
           >
-            전송
+            <IconSend size={15} color="#fff" />
           </button>
         </div>
       </div>

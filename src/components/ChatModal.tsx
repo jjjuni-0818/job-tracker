@@ -190,7 +190,7 @@ export default function ChatModal({ application, onClose }: Props) {
         )}
 
         {/* 채팅 영역 */}
-        <div style={{ height: 340, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12, padding: '4px 0' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12, padding: '4px 2px' }}>
           {messages.length === 0 && (
             <div style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', marginTop: 60 }}>
               공고를 분석하면 질문할 수 있어요!
@@ -217,14 +217,16 @@ export default function ChatModal({ application, onClose }: Props) {
                 {/* 메시지 버블 */}
                 <div style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
                   <div style={{
-                    maxWidth: '85%',
+                    maxWidth: '80%',
                     padding: '10px 14px',
-                    borderRadius: m.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                    background: m.role === 'user' ? '#6366f1' : '#f3f4f6',
-                    color: m.role === 'user' ? '#fff' : '#111827',
+                    borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    background: m.role === 'user' ? 'var(--accent)' : 'var(--surface-2)',
+                    color: m.role === 'user' ? '#fff' : 'var(--text-1)',
                     fontSize: 14,
-                    lineHeight: 1.6,
+                    lineHeight: 1.7,
                     whiteSpace: 'pre-wrap',
+                    textAlign: 'left',  // 항상 왼쪽 정렬
+                    wordBreak: 'keep-all',
                   }}>
                     {m.content}
                   </div>
@@ -251,7 +253,7 @@ export default function ChatModal({ application, onClose }: Props) {
             onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleSend(); }}
             placeholder="예상 면접 질문 알려줘"
             disabled={!ingested}
-            style={{ flex: 1, padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none' }}
+            style={{ flex: 1, padding: '10px 14px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 14, outline: 'none', background: 'var(--bg)', color: 'var(--text-1)', fontFamily: 'inherit' }}
           />
           <button
             onClick={handleSend}
@@ -266,5 +268,5 @@ export default function ChatModal({ application, onClose }: Props) {
   );
 }
 
-const overlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 };
-const modal: React.CSSProperties = { background: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 520, boxShadow: '0 8px 32px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column' };
+const overlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(26,21,18,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, backdropFilter: 'blur(4px)', padding: '20px' };
+const modal: React.CSSProperties = { background: 'var(--surface)', borderRadius: 'var(--radius-xl)', padding: 24, width: '100%', maxWidth: 600, height: '80vh', maxHeight: 720, boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', border: '1px solid var(--border)' };

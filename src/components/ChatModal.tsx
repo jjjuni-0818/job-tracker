@@ -130,7 +130,13 @@ export default function ChatModal({ application, onClose }: Props) {
       const res = await fetch(`${API}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ application_id: application.id, question }),
+        body: JSON.stringify({
+          application_id: application.id,
+          question,
+          company_name: application.company_name,
+          position: application.position,
+          status: application.status,
+        }),
       });
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'ai', content: data.answer, created_at: new Date().toISOString() }]);

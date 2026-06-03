@@ -29,6 +29,7 @@ export interface Application {
   platform: string;
   applied_at: string;   // 'YYYY-MM-DD' 형식의 날짜 문자열
   status: Status;
+  job_url: string;      // 공고 URL (클릭 시 해당 사이트로 이동)
   notes: string;
   created_at: string;
 }

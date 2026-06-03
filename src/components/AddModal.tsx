@@ -18,9 +18,10 @@ export default function AddModal({ onClose, onAdd }: Props) {
   const [form, setForm] = useState<ApplicationInsert>({
     company_name: '',
     position: '',
-    platform: '원티드',                              // 가장 많이 쓰는 플랫폼을 기본값으로
-    applied_at: new Date().toISOString().slice(0, 10), // 오늘 날짜를 'YYYY-MM-DD' 형식으로
+    platform: '원티드',
+    applied_at: new Date().toISOString().slice(0, 10),
     status: '서류중',
+    job_url: '',
     notes: '',
   });
 
@@ -101,6 +102,17 @@ export default function AddModal({ onClose, onAdd }: Props) {
             >
               {STATUS_LIST.map(s => <option key={s}>{s}</option>)}
             </select>
+          </label>
+
+          {/* 공고 URL (선택) */}
+          <label style={labelStyle}>
+            공고 URL
+            <input
+              style={inputStyle}
+              value={form.job_url}
+              onChange={e => setForm(f => ({ ...f, job_url: e.target.value }))}
+              placeholder="https://www.wanted.co.kr/..."
+            />
           </label>
 
           {/* 메모 (선택) */}

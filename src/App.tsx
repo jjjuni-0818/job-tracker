@@ -12,6 +12,7 @@ import { supabase } from './lib/supabase';
 import type { Application, ApplicationInsert, Status } from './types';
 import { STATUS_LIST, STATUS_COLOR } from './types';
 import AddModal from './components/AddModal';
+import EditModal from './components/EditModal';
 import './App.css';
 
 export default function App() {
@@ -21,6 +22,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   // 지원 추가 모달 열림 여부
   const [showModal, setShowModal] = useState(false);
+  // 수정할 항목 (null이면 EditModal 닫힘)
+  const [editTarget, setEditTarget] = useState<Application | null>(null);
   // 선택된 필터 상태 ('전체'면 필터 없음)
   const [filterStatus, setFilterStatus] = useState<Status | '전체'>('전체');
 
@@ -41,8 +44,12 @@ export default function App() {
   // ── 지원 추가 ────────────────────────────────────────────
   // AddModal에서 폼 제출 시 호출됨 → DB INSERT 후 목록 새로고침
   const handleAdd = async (data: ApplicationInsert) => {
-    await supabase.from('applications').insert(data);
-    await fetchAll(); // 추가 후 최신 목록 다시 불러오기
+    const { error } = await supabase.from('applications').insert(data);
+    if (error) {
+      alert('저장 실패: ' + error.message);
+      return;
+    }
+    await fetchAll();
   };
 
   // ── 상태 변경 ────────────────────────────────────────────
@@ -55,6 +62,13 @@ export default function App() {
 
   // ── 삭제 ─────────────────────────────────────────────────
   // confirm 확인 후 DB DELETE + 로컬 상태에서 즉시 제거
+  // ── 수정 ─────────────────────────────────────────────────
+  // EditModal에서 제출 시 호출 → DB UPDATE + 로컬 상태 즉시 반영
+  const handleEdit = async (id: string, data: Partial<Application>) => {
+    await supabase.from('applications').update(data).eq('id', id);
+    setApplications(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('삭제하시겠습니까?')) return;
     await supabase.from('applications').delete().eq('id', id);
@@ -134,7 +148,7 @@ export default function App() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ background: '#f3f4f6', borderBottom: '1px solid #e5e7eb' }}>
-                  {['회사명', '포지션', '플랫폼', '지원일', '상태', '메모', ''].map((h, i) => (
+                  {['회사명', '포지션', '플랫폼', '지원일', '상태', '공고', '메모', ''].map((h, i) => (
                     <th key={i} style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -176,19 +190,34 @@ export default function App() {
                       </select>
                     </td>
 
+                    {/* 공고 URL — 있으면 링크, 없으면 빈칸 */}
+                    <td style={{ padding: '12px 14px' }}>
+                      {app.job_url ? (
+                        <a href={app.job_url} target="_blank" rel="noreferrer" style={{ color: '#6366f1', fontSize: 13 }}>
+                          공고 ↗
+                        </a>
+                      ) : null}
+                    </td>
+
                     {/* 메모 — 길면 말줄임표, hover 시 title로 전체 내용 확인 */}
                     <td
-                      style={{ padding: '12px 14px', color: '#9ca3af', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      style={{ padding: '12px 14px', color: '#9ca3af', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                       title={app.notes}
                     >
                       {app.notes}
                     </td>
 
-                    {/* 삭제 버튼 */}
-                    <td style={{ padding: '12px 14px' }}>
+                    {/* 수정/삭제 버튼 */}
+                    <td style={{ padding: '12px 14px', display: 'flex', gap: 4 }}>
+                      <button
+                        onClick={() => setEditTarget(app)}
+                        style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 15 }}
+                      >
+                        ✏️
+                      </button>
                       <button
                         onClick={() => handleDelete(app.id)}
-                        style={{ background: 'none', border: 'none', color: '#d1d5db', cursor: 'pointer', fontSize: 16 }}
+                        style={{ background: 'none', border: 'none', color: '#d1d5db', cursor: 'pointer', fontSize: 15 }}
                       >
                         🗑
                       </button>
@@ -203,6 +232,7 @@ export default function App() {
 
       {/* 모달은 showModal이 true일 때만 렌더링 */}
       {showModal && <AddModal onClose={() => setShowModal(false)} onAdd={handleAdd} />}
+      {editTarget && <EditModal application={editTarget} onClose={() => setEditTarget(null)} onEdit={handleEdit} />}
     </div>
   );
 }

@@ -8,7 +8,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+import asyncio
 import os
 
 from crawler import crawl_url
@@ -18,7 +20,15 @@ from db import save_document, search_similar
 
 load_dotenv()
 
-app = FastAPI(title="Job Tracker RAG API")
+# ── 서버 시작 시 백그라운드로 모델 워밍업 ───────────────────────
+# healthcheck는 바로 통과, HuggingFace 모델은 뒤에서 미리 로드
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 서버 시작 즉시 백그라운드에서 모델 로드 시작 (blocking 없음)
+    asyncio.create_task(asyncio.to_thread(get_embedding, "warmup"))
+    yield
+
+app = FastAPI(title="Job Tracker RAG API", lifespan=lifespan)
 
 # 환경변수로 CORS 허용 URL 관리 (로컬 + 배포 둘 다 허용)
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,https://jjjuni-0818.github.io").split(",")

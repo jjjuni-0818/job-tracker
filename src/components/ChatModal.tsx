@@ -29,7 +29,7 @@ const formatDate = (dateStr: string) => {
   return `${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
 };
 
-const API = 'http://localhost:8000';
+const API = 'https://job-tracker-production-d94c.up.railway.app';
 
 export default function ChatModal({ application, onClose }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);

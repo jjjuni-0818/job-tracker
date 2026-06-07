@@ -29,40 +29,16 @@
 
 ## 기술 스택
 
-```mermaid
-graph TB
-    subgraph Frontend["🖥️ 프론트엔드"]
-        React["React 18 + TypeScript + Vite"]
-        GHPages["GitHub Pages 배포"]
-    end
-
-    subgraph Backend["⚙️ 백엔드"]
-        FastAPI["FastAPI (Python)"]
-        HF["HuggingFace 임베딩"]
-        Groq["Groq LLM (llama-3.1)"]
-    end
-
-    subgraph DB["🗄️ Supabase (PostgreSQL)"]
-        T1["applications"]
-        T2["chat_messages"]
-        T3["job_documents (pgvector)"]
-    end
-
-    Frontend --> DB
-    Frontend --> Backend
-    Backend --> DB
-```
-
-| 역할 | 기술 |
+| | 기술 |
 |------|------|
 | 프론트엔드 | React 18 + TypeScript + Vite |
-| DB | Supabase (PostgreSQL + pgvector) |
 | 백엔드 | FastAPI (Python) |
+| DB | Supabase (PostgreSQL + pgvector) |
 | 임베딩 | HuggingFace sentence-transformers |
 | LLM | Groq API (llama-3.1-8b-instant) |
-| 배포 | GitHub Pages + GitHub Actions |
+| 배포 | GitHub Pages + Railway |
 
-**전부 무료 스택입니다.**
+전부 무료 스택으로 구성했다.
 
 ---
 

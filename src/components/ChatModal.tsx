@@ -46,6 +46,9 @@ export default function ChatModal({ application, onClose }: Props) {
 
   // 모달 열릴 때 이전 대화 + 공고 분석 여부 불러오기
   useEffect(() => {
+    // 모델 미리 워밍업 (백그라운드, 결과 무시) — /ingest 버튼 누를 때쯤 준비 완료
+    fetch(`${API}/warmup`, { method: 'POST' }).catch(() => {});
+
     const load = async () => {
       // 이전 채팅 기록 불러오기
       const { data: msgs } = await supabase

@@ -1,21 +1,26 @@
 # ============================================================
-# embedder.py — 텍스트 → 벡터 변환 (HuggingFace, 완전 무료)
+# embedder.py — 텍스트 → 벡터 변환 (Cohere API)
 # ============================================================
-# sentence-transformers 라이브러리로 로컬에서 임베딩 생성
-# 모델: paraphrase-multilingual-MiniLM-L12-v2 (한국어 지원)
+# embed-multilingual-light-v3.0
+# - 384차원 (DB 스키마 그대로 호환)
+# - 한국어 지원
+# - API 호출 방식 → 서버 메모리 거의 안 씀 (OOM 해결)
 
-from sentence_transformers import SentenceTransformer
+import cohere
+import os
 
-# Lazy loading: 서버 시작 시 바로 다운로드하지 않고
-# 처음 get_embedding() 호출될 때 로드 (healthcheck 통과 목적)
-_model = None
+_client = None
 
-def _get_model():
-    global _model
-    if _model is None:
-        _model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-    return _model
+def _get_client():
+    global _client
+    if _client is None:
+        _client = cohere.Client(os.getenv("COHERE_API_KEY"))
+    return _client
 
 def get_embedding(text: str) -> list[float]:
-    embedding = _get_model().encode(text, normalize_embeddings=True)
-    return embedding.tolist()
+    response = _get_client().embed(
+        texts=[text],
+        model="embed-multilingual-light-v3.0",
+        input_type="search_document",
+    )
+    return response.embeddings[0]

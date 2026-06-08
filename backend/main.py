@@ -99,6 +99,16 @@ async def chat(req: ChatRequest):
 def health():
     return {"status": "ok"}
 
+@app.get("/debug-env")
+def debug_env():
+    """환경변수 설정 확인용 (값은 노출 안 함)"""
+    return {
+        "SUPABASE_URL": "SET" if os.getenv("SUPABASE_URL") else "MISSING",
+        "SUPABASE_KEY": "SET" if os.getenv("SUPABASE_KEY") else "MISSING",
+        "COHERE_API_KEY": "SET" if os.getenv("COHERE_API_KEY") else "MISSING",
+        "GROQ_API_KEY": "SET" if os.getenv("GROQ_API_KEY") else "MISSING",
+    }
+
 # ── 모델 워밍업 (ChatModal 열릴 때 미리 호출) ─────────────────────
 # 첫 /ingest 요청 전에 모델을 미리 로드해두기 위한 엔드포인트
 def _warmup_model():

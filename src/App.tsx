@@ -6,6 +6,7 @@ import { STATUS_LIST, STATUS_COLOR } from './types';
 import AddModal from './components/AddModal';
 import EditModal from './components/EditModal';
 import ChatModal from './components/ChatModal';
+import StatsChart from './components/StatsChart';
 import { IconTarget, IconPlus, IconEdit, IconTrash, IconChat, IconLink, IconClipboard } from './components/Icons';
 import './App.css';
 
@@ -130,6 +131,9 @@ export default function App() {
             );
           })}
         </div>
+
+        {/* 통계 차트 */}
+        <StatsChart applications={applications} />
 
         {/* 플랫폼 탭 */}
         <div style={{ display: 'flex', gap: 2, marginBottom: 20, background: 'var(--surface)', borderRadius: 'var(--radius-md)', padding: 4, border: '1px solid var(--border)', width: 'fit-content' }}>

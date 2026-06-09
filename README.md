@@ -34,7 +34,7 @@
 | 프론트엔드 | React 18 + TypeScript + Vite |
 | 백엔드 | FastAPI (Python) |
 | DB | Supabase (PostgreSQL + pgvector) |
-| 임베딩 | HuggingFace sentence-transformers |
+| 임베딩 | Cohere API (embed-multilingual-light-v3.0) |
 | LLM | Groq API (llama-3.1-8b-instant) |
 | 배포 | GitHub Pages + Railway |
 
@@ -273,7 +273,7 @@ job-tracker/
 
 ## 앞으로 할 것
 
-- [ ] Railway 백엔드 배포 (배포 URL에서도 AI 채팅 가능하게)
+- [x] Railway 백엔드 배포 (배포 URL에서도 AI 채팅 가능하게)
 - [ ] 통계 차트 (월별 지원 수, 합격률)
 - [ ] 모바일 반응형
 - [ ] RAG 고도화 (청킹, 리랭킹)

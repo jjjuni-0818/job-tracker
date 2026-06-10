@@ -106,10 +106,11 @@ async def chat_stream(req: ChatRequest):
     if not context:
         raise HTTPException(status_code=404, detail="공고 내용이 없습니다. 먼저 공고 URL을 등록해주세요.")
 
-    # 3. 스트리밍으로 LLM 답변 전송
+    # 3. 스트리밍으로 LLM 답변 전송 (X-Accel-Buffering: no → 프록시 버퍼링 비활성화)
     return StreamingResponse(
         ask_groq_stream(context, req.question, req.company_name, req.position, req.status),
         media_type="text/plain; charset=utf-8",
+        headers={"X-Accel-Buffering": "no"},
     )
 
 @app.get("/health")

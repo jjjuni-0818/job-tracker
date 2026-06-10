@@ -127,6 +127,13 @@ job_documents (
 )
 ```
 
+-- 벡터 유사도 검색 함수 (RAG 필수 — Supabase SQL Editor에서 직접 생성)
+match_job_documents (
+  query_embedding vector(384),
+  match_application_id uuid,
+  match_count int
+) → table(content text, similarity float)
+
 ---
 
 ## API 엔드포인트

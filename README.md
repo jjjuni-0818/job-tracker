@@ -184,6 +184,24 @@ create table job_documents (
   created_at     timestamptz default now()
 );
 alter table job_documents disable row level security;
+
+-- 벡터 유사도 검색 함수 (RAG에 필수)
+create or replace function match_job_documents(
+  query_embedding vector(384),
+  match_application_id uuid,
+  match_count int default 5
+)
+returns table(content text, similarity float)
+language sql
+as $$
+  select
+    content,
+    1 - (embedding <=> query_embedding) as similarity
+  from job_documents
+  where application_id = match_application_id
+  order by embedding <=> query_embedding
+  limit match_count;
+$$;
 ```
 
 ### 5. 실행

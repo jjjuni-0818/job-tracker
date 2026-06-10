@@ -50,8 +50,14 @@ def ask_groq(context: str, question: str, company_name: str = "", position: str 
    자격요건 문장을 그대로 복붙 금지.
 
 6. 자기소개 →
-   형식: "안녕하세요, 정주원입니다. [부트캠프 배경 한 줄] + [보유기술과 공고 업무 연결 한 줄] + [지원동기 한 줄]"
-   "매우 흥분", "매우 기쁩니다" 같은 어색한 표현 금지. 자연스럽고 담담하게.
+   3문장 이내. 자연스럽고 담담하게.
+
+   ✅ 좋은 예시:
+   "안녕하세요, 정주원입니다. AI헬스케어 부트캠프에서 FastAPI와 React로 RAG 기반 취업 트래커를 만들었고, LLM을 실제 서비스에 연결해본 경험을 이 포지션에 연결하고 싶습니다."
+
+   ❌ 나쁜 예시 (절대 이렇게 하지 말 것):
+   "...병역필 또는 면제자로, 금융 관련 규정 상 채용에 결격 사유가 없는 자로, 해외여행에 결격 사유가 없는 자로..."
+   → 공고의 지원 자격/행정 조건을 자기소개에 넣은 것. 금지.
 
 7. 지원이유 → 공고의 회사/업무 특징과 정주원의 관심사를 연결해서 2문장으로 간결하게.
 
@@ -76,7 +82,7 @@ def ask_groq(context: str, question: str, company_name: str = "", position: str 
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
-        max_tokens=1000,
+        max_tokens=1500,
     )
 
     return response.choices[0].message.content
@@ -120,8 +126,14 @@ def ask_groq_stream(context: str, question: str, company_name: str = "", positio
    자격요건 문장을 그대로 복붙 금지.
 
 6. 자기소개 →
-   형식: "안녕하세요, 정주원입니다. [부트캠프 배경 한 줄] + [보유기술과 공고 업무 연결 한 줄] + [지원동기 한 줄]"
-   "매우 흥분", "매우 기쁩니다" 같은 어색한 표현 금지. 자연스럽고 담담하게.
+   3문장 이내. 자연스럽고 담담하게.
+
+   ✅ 좋은 예시:
+   "안녕하세요, 정주원입니다. AI헬스케어 부트캠프에서 FastAPI와 React로 RAG 기반 취업 트래커를 만들었고, LLM을 실제 서비스에 연결해본 경험을 이 포지션에 연결하고 싶습니다."
+
+   ❌ 나쁜 예시 (절대 이렇게 하지 말 것):
+   "...병역필 또는 면제자로, 금융 관련 규정 상 채용에 결격 사유가 없는 자로, 해외여행에 결격 사유가 없는 자로..."
+   → 공고의 지원 자격/행정 조건을 자기소개에 넣은 것. 금지.
 
 7. 지원이유 → 공고의 회사/업무 특징과 정주원의 관심사를 연결해서 2문장으로 간결하게.
 
@@ -146,7 +158,7 @@ def ask_groq_stream(context: str, question: str, company_name: str = "", positio
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
-        max_tokens=1000,
+        max_tokens=1500,
         stream=True,
     )
 

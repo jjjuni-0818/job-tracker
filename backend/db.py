@@ -28,7 +28,7 @@ def save_document(application_id: str, contents: list[str], embeddings: list[lis
     ]
     client.table("job_documents").insert(rows).execute()
 
-def search_similar(application_id: str, query_embedding: list[float], top_k: int = 3) -> str:
+def search_similar(application_id: str, query_embedding: list[float], top_k: int = 5) -> str:
     """질문과 가장 유사한 공고 청크를 코사인 유사도로 검색"""
     client = get_client()
     res = client.rpc("match_job_documents", {

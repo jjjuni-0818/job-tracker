@@ -119,7 +119,7 @@ export default function ChatModal({ application, onClose }: Props) {
     setIngesting(false);
   };
 
-  // 질문 → LLM 답변 → 저장
+  // 질문 → LLM 스트리밍 답변 → 저장
   const handleSend = async () => {
     if (!input.trim() || loading) return;
     const question = input.trim();
@@ -129,8 +129,12 @@ export default function ChatModal({ application, onClose }: Props) {
     await saveMessage('user', question);
     setLoading(true);
 
+    // AI 버블 미리 추가 (스트리밍 텍스트 받으면서 업데이트)
+    const aiCreatedAt = new Date().toISOString();
+    setMessages(prev => [...prev, { role: 'ai', content: '', created_at: aiCreatedAt }]);
+
     try {
-      const res = await fetch(`${API}/chat`, {
+      const res = await fetch(`${API}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -141,12 +145,34 @@ export default function ChatModal({ application, onClose }: Props) {
           status: application.status,
         }),
       });
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: 'ai', content: data.answer, created_at: new Date().toISOString() }]);
-      await saveMessage('ai', data.answer);
+
+      if (!res.ok || !res.body) throw new Error('서버 오류');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullAnswer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        fullAnswer += chunk;
+        // 마지막 메시지(AI 버블) 실시간 업데이트
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'ai', content: fullAnswer, created_at: aiCreatedAt };
+          return updated;
+        });
+      }
+
+      await saveMessage('ai', fullAnswer);
     } catch (e) {
       const errMsg = '오류가 발생했습니다. 서버 상태를 확인해주세요.';
-      setMessages(prev => [...prev, { role: 'ai', content: errMsg }]);
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: 'ai', content: errMsg };
+        return updated;
+      });
     }
     setLoading(false);
   };
@@ -243,7 +269,8 @@ export default function ChatModal({ application, onClose }: Props) {
               </div>
             );
           })}
-          {loading && (
+          {/* 스트리밍 시작 전에만 표시 (AI 버블 비어있을 때) */}
+          {loading && messages[messages.length - 1]?.content === '' && (
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
               <div style={{ padding: '10px 14px', borderRadius: '12px 12px 12px 2px', background: '#f3f4f6', color: '#6b7280', fontSize: 14 }}>
                 답변 생성 중...

@@ -7,13 +7,14 @@
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
 
 from crawler import crawl_url
 from embedder import get_embedding
-from llm import ask_groq
+from llm import ask_groq, ask_groq_stream
 from db import save_document, search_similar
 
 load_dotenv()
@@ -95,19 +96,25 @@ async def chat(req: ChatRequest):
 
     return {"answer": answer}
 
+@app.post("/chat/stream")
+async def chat_stream(req: ChatRequest):
+    # 1. 질문을 벡터로 변환
+    q_embedding = get_embedding(req.question)
+
+    # 2. 유사한 공고 청크 검색
+    context = search_similar(req.application_id, q_embedding)
+    if not context:
+        raise HTTPException(status_code=404, detail="공고 내용이 없습니다. 먼저 공고 URL을 등록해주세요.")
+
+    # 3. 스트리밍으로 LLM 답변 전송
+    return StreamingResponse(
+        ask_groq_stream(context, req.question, req.company_name, req.position, req.status),
+        media_type="text/plain; charset=utf-8",
+    )
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-@app.get("/debug-env")
-def debug_env():
-    """환경변수 설정 확인용 (값은 노출 안 함)"""
-    return {
-        "SUPABASE_URL": "SET" if os.getenv("SUPABASE_URL") else "MISSING",
-        "SUPABASE_KEY": "SET" if os.getenv("SUPABASE_KEY") else "MISSING",
-        "COHERE_API_KEY": "SET" if os.getenv("COHERE_API_KEY") else "MISSING",
-        "GROQ_API_KEY": "SET" if os.getenv("GROQ_API_KEY") else "MISSING",
-    }
 
 # ── 모델 워밍업 (ChatModal 열릴 때 미리 호출) ─────────────────────
 # 첫 /ingest 요청 전에 모델을 미리 로드해두기 위한 엔드포인트

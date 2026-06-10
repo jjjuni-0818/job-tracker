@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 import os
 
 from crawler import crawl_url
-from embedder import get_embedding
+from embedder import get_embedding, chunk_text, get_embeddings_batch
 from llm import ask_groq, ask_groq_stream
 from db import save_document, search_similar
 
@@ -66,18 +66,22 @@ async def ingest(req: IngestRequest):
     elif not company_found:
         warning = f"'{req.company_name}'이 공고에서 발견되지 않았습니다. 다른 회사 공고일 수 있습니다."
 
-    # 3. 텍스트를 벡터로 변환
-    embedding = get_embedding(text)
+    # 3. 텍스트를 청크로 분할
+    chunks = chunk_text(text, chunk_size=500, overlap=50)
 
-    # 4. Supabase에 저장
-    save_document(req.application_id, text, embedding)
+    # 4. 청크 전체를 한 번에 임베딩 (API 호출 1회로 절약)
+    embeddings = get_embeddings_batch(chunks)
+
+    # 5. Supabase에 청크별로 저장
+    save_document(req.application_id, chunks, embeddings)
 
     return {
         "status": "ok",
         "text_length": len(text),
+        "chunk_count": len(chunks),  # 몇 개 청크로 나뉘었는지
         "company_found": company_found,
         "position_found": position_found,
-        "warning": warning,  # None이면 정상, 문자열이면 경고 메시지
+        "warning": warning,
     }
 
 # ── RAG 채팅 ─────────────────────────────────────────────────

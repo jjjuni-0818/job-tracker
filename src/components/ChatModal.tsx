@@ -5,6 +5,7 @@
 //       모달 열 때 이전 대화 불러오기
 
 import { useState, useEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import type { Application } from '../types';
 import { supabase } from '../lib/supabase';
 import { IconClose, IconSend, IconSearch } from './Icons';
@@ -157,11 +158,13 @@ export default function ChatModal({ application, onClose }: Props) {
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
         fullAnswer += chunk;
-        // 마지막 메시지(AI 버블) 실시간 업데이트
-        setMessages(prev => {
-          const updated = [...prev];
-          updated[updated.length - 1] = { role: 'ai', content: fullAnswer, created_at: aiCreatedAt };
-          return updated;
+        // flushSync: React 18 자동 배칭 우회 → 청크마다 즉시 렌더링
+        flushSync(() => {
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: 'ai', content: fullAnswer, created_at: aiCreatedAt };
+            return updated;
+          });
         });
       }
 

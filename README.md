@@ -2,7 +2,7 @@
 
 > 여러 채용 플랫폼에 지원한 내역을 한 곳에서 관리하고, AI로 면접을 준비하는 개인용 대시보드
 
-**배포 URL**: https://jjjuni-0818.github.io/job-tracker/
+**배포 URL**: https://[username].github.io/job-tracker/
 
 ---
 
@@ -74,7 +74,7 @@ erDiagram
     }
 
     applications ||--o{ chat_messages : "1:N"
-    applications ||--o| job_documents : "1:1"
+    applications ||--o{ job_documents : "1:N (청킹)"
 ```
 
 ---
@@ -98,7 +98,8 @@ erDiagram
 |--------|------|------|-----------|
 | GET | `/health` | 서버 상태 확인 | - |
 | POST | `/ingest` | 공고 크롤링 + 벡터 저장 | `{application_id, url, company_name, position}` |
-| POST | `/chat` | RAG 채팅 답변 | `{application_id, question, company_name, position, status}` |
+| POST | `/chat` | RAG 채팅 답변 (동기) | `{application_id, question, company_name, position, status}` |
+| POST | `/chat/stream` | RAG 채팅 답변 (스트리밍) | `{application_id, question, company_name, position, status}` |
 
 ---
 
@@ -113,7 +114,7 @@ erDiagram
 ### 1. 클론 및 설치
 
 ```bash
-git clone https://github.com/jjjuni-0818/job-tracker.git
+git clone https://github.com/[username]/job-tracker.git
 cd job-tracker
 npm install
 ```
@@ -242,7 +243,7 @@ job-tracker/
 ├── backend/
 │   ├── main.py               # FastAPI 엔드포인트
 │   ├── crawler.py            # 공고 크롤링 (BeautifulSoup)
-│   ├── embedder.py           # 벡터 임베딩 (HuggingFace)
+│   ├── embedder.py           # 벡터 임베딩 (Cohere API)
 │   ├── llm.py                # Groq LLM 호출
 │   ├── db.py                 # Supabase 벡터 DB 연동
 │   ├── requirements.txt      # Python 패키지
@@ -253,7 +254,8 @@ job-tracker/
 │   ├── PROJECT_SUMMARY.md
 │   ├── PROJECT_SUMMARY2.md
 │   ├── velog_post.md         # 벨로그 1편
-│   └── velog_rag.md          # 벨로그 2편 (RAG)
+│   ├── velog_rag.md          # 벨로그 2편 (RAG 1차)
+│   └── velog_rag2.md         # 벨로그 3편 (RAG 고도화)
 ├── start.sh                  # 한번에 실행
 ├── CLAUDE.md                 # Claude Code 가이드
 └── .github/workflows/
@@ -276,4 +278,5 @@ job-tracker/
 - [x] Railway 백엔드 배포 (배포 URL에서도 AI 채팅 가능하게)
 - [ ] 통계 차트 (월별 지원 수, 합격률)
 - [ ] 모바일 반응형
-- [ ] RAG 고도화 (청킹, 리랭킹)
+- [x] RAG 고도화 (벡터 검색, 청킹, 스트리밍)
+- [ ] RAG 고도화 2단계 (리랭킹, 채팅 히스토리 컨텍스트)

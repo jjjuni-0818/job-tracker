@@ -18,7 +18,7 @@ Claude Code가 이 프로젝트를 작업할 때 참고하는 가이드입니다
 | 프론트엔드 | React 18 + TypeScript + Vite |
 | DB | Supabase (PostgreSQL + pgvector) |
 | 백엔드 | FastAPI (Python) |
-| 임베딩 | HuggingFace sentence-transformers (로컬, 무료) |
+| 임베딩 | Cohere API (embed-multilingual-light-v3.0, 무료) |
 | LLM | Groq API - llama-3.1-8b-instant (무료) |
 | 크롤링 | BeautifulSoup |
 | 배포 | GitHub Pages + GitHub Actions |
@@ -45,9 +45,9 @@ job-tracker/
 │   ├── main.tsx              # 앱 진입점 (비밀번호 보호 포함)
 │   └── App.css               # Claude 디자인 시스템 CSS 변수
 ├── backend/
-│   ├── main.py               # FastAPI 엔드포인트 (/ingest, /chat, /health)
+│   ├── main.py               # FastAPI 엔드포인트 (/ingest, /chat, /chat/stream, /health)
 │   ├── crawler.py            # 공고 URL 크롤링 (BeautifulSoup)
-│   ├── embedder.py           # 텍스트 → 벡터 변환 (HuggingFace)
+│   ├── embedder.py           # 텍스트 → 벡터 변환 (Cohere API, 청킹 포함)
 │   ├── llm.py                # Groq LLM 호출 + 프롬프트
 │   ├── db.py                 # Supabase 벡터 DB 연동
 │   ├── requirements.txt      # Python 패키지
@@ -60,7 +60,8 @@ job-tracker/
 │   ├── PROJECT_SUMMARY.md    # 1차 개발 정리
 │   ├── PROJECT_SUMMARY2.md   # 2차 개발 정리 (UI/RAG/프롬프트)
 │   ├── velog_post.md         # 벨로그 1편 (트래커 만들기)
-│   └── velog_rag.md          # 벨로그 2편 (RAG 구현)
+│   ├── velog_rag.md          # 벨로그 2편 (RAG 구현)
+│   └── velog_rag2.md         # 벨로그 3편 (RAG 고도화)
 ├── start.sh                  # 백엔드 + 프론트 한번에 실행
 ├── .env                      # 프론트 환경변수 (git 제외)
 ├── .env.example              # 환경변수 템플릿
@@ -85,6 +86,7 @@ VITE_SUPABASE_ANON_KEY=eyJ...   # anon public key
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=eyJ...             # service_role key (anon과 다름!)
 GROQ_API_KEY=gsk_...
+COHERE_API_KEY=...              # 임베딩용
 ```
 
 ---
@@ -120,7 +122,7 @@ job_documents (
   id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   application_id uuid REFERENCES applications(id) ON DELETE CASCADE,
   content        text NOT NULL,   -- 크롤링된 공고 텍스트
-  embedding      vector(384),     -- HuggingFace 384차원 벡터
+  embedding      vector(384),     -- Cohere 384차원 벡터 (청크별 저장)
   created_at     timestamptz DEFAULT now()
 )
 ```
@@ -134,8 +136,9 @@ job_documents (
 | 메서드 | 경로 | 역할 |
 |--------|------|------|
 | GET | `/health` | 서버 상태 확인 |
-| POST | `/ingest` | 공고 크롤링 + 검증 + 벡터 저장 |
-| POST | `/chat` | RAG 채팅 답변 생성 |
+| POST | `/ingest` | 공고 크롤링 + 청킹 + 벡터 저장 |
+| POST | `/chat` | RAG 채팅 답변 생성 (동기) |
+| POST | `/chat/stream` | RAG 채팅 답변 생성 (스트리밍) |
 
 ### /ingest 요청 바디
 ```json

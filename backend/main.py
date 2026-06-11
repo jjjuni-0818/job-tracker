@@ -41,9 +41,10 @@ class IngestRequest(BaseModel):
 class ChatRequest(BaseModel):
     application_id: str  # 어떤 공고에 대한 질문인지
     question: str        # 사용자 질문
-    company_name: str = ""  # 회사명 (LLM 컨텍스트용)
-    position: str = ""      # 지원 포지션 (LLM 컨텍스트용)
-    status: str = ""        # 현재 전형 상태 (LLM 컨텍스트용)
+    company_name: str = ""    # 회사명 (LLM 컨텍스트용)
+    position: str = ""        # 지원 포지션 (LLM 컨텍스트용)
+    status: str = ""          # 현재 전형 상태 (LLM 컨텍스트용)
+    history: list[dict] = []  # 이전 대화 [{role: "user"/"ai", content: str}]
 
 # ── 공고 크롤링 + 저장 ────────────────────────────────────────
 @app.post("/ingest")
@@ -95,8 +96,8 @@ async def chat(req: ChatRequest):
     if not context:
         raise HTTPException(status_code=404, detail="공고 내용이 없습니다. 먼저 공고 URL을 등록해주세요.")
 
-    # 3. Groq LLM에 컨텍스트 + 질문 + 지원자 정보 전달 → 답변 생성
-    answer = ask_groq(context, req.question, req.company_name, req.position, req.status)
+    # 3. Groq LLM에 컨텍스트 + 질문 + 히스토리 전달 → 답변 생성
+    answer = ask_groq(context, req.question, req.company_name, req.position, req.status, req.history)
 
     return {"answer": answer}
 
@@ -110,9 +111,9 @@ async def chat_stream(req: ChatRequest):
     if not context:
         raise HTTPException(status_code=404, detail="공고 내용이 없습니다. 먼저 공고 URL을 등록해주세요.")
 
-    # 3. 스트리밍으로 LLM 답변 전송 (X-Accel-Buffering: no → 프록시 버퍼링 비활성화)
+    # 3. 스트리밍으로 LLM 답변 전송 (히스토리 포함, X-Accel-Buffering: no → 프록시 버퍼링 비활성화)
     return StreamingResponse(
-        ask_groq_stream(context, req.question, req.company_name, req.position, req.status),
+        ask_groq_stream(context, req.question, req.company_name, req.position, req.status, req.history),
         media_type="text/plain; charset=utf-8",
         headers={"X-Accel-Buffering": "no"},
     )

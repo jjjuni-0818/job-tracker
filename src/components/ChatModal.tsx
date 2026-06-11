@@ -135,6 +135,9 @@ export default function ChatModal({ application, onClose }: Props) {
     setMessages(prev => [...prev, { role: 'ai', content: '', created_at: aiCreatedAt }]);
 
     try {
+      // 현재 질문 직전까지의 메시지 최근 6개를 히스토리로 전달 (3회 왕복)
+      const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }));
+
       const res = await fetch(`${API}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -144,6 +147,7 @@ export default function ChatModal({ application, onClose }: Props) {
           company_name: application.company_name,
           position: application.position,
           status: application.status,
+          history,
         }),
       });
 
